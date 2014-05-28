@@ -1,6 +1,7 @@
 $(function() {
 	// URLs
 	var GEO_DATA_URL = "http://54.187.124.79/getfoodtrucks.php";
+	var SEARCH_URL = "http://54.187.124.79/search.php?prefix=";
 
 	// JSON elements
 	var FT_NAME_ID = 'applicant';
@@ -11,6 +12,8 @@ $(function() {
 
 	// HTML elements
 	var MAP_DIV_ID = 'map_canvas';
+	var SEARCHBAR_ID = 'search';
+	var SEARCH_DIV_ID = 'livesearch';
 
 	var geocoder = new google.maps.Geocoder();
 
@@ -36,6 +39,12 @@ $(function() {
 		//map.setCenter(initialLocation);
 		});
 	}
+
+	// Search for a specific food truck 
+	var searchbar = document.getElementById(SEARCHBAR_ID);
+	searchbar.addEventListener("keyup", function() {
+		showSearchResult(searchbar.value, SEARCH_DIV_ID);
+	});
 
 	// Google Maps scrolling issue
 	var divfix = '<div class="marker" style="line-height:1.35;overflow:hidden;white-space:nowrap;">';
@@ -131,7 +140,36 @@ $(function() {
 		collection: foodtrucks
 	});
 	foodtrucks.fetch();
-	
+
+// -- Search for Food Trucks --
+
+	var searchPrefix = ""; // for URL parameter
+
+	var SearchFTModel = Backbone.Model;
+
+	var SearchFTCollection = Backbone.Collection.extend({
+		model: SearchFTModel,
+		url: function() {
+			return SEARCH_URL+searchPrefix;
+		},
+		initialize: function() {
+		}
+	}); // End of SearchFT collection
+
+	var SearchFTView = Backbone.View.extend({
+		el: $('#'+SEARCH_DIV_ID),
+		initialize: function() {
+			this.listenTo(this.collection, 'reset', this.render);
+		},
+
+		render: function() {
+			_.each(this.collection.models, function(ft) {
+				var searches = document.getElementById(SEARCH_DIV_ID); 
+				searches.innerHTML += "<p>"+ft.get(FT_NAME_ID)+"  "+ft.get(FT_ADDRESS_ID)+"</p>"; 
+			}); 
+		} 
+	}); // End of SearchView view 
+
 // -- Helper functions --
 
 	// Get and format Marker Information Window
@@ -145,7 +183,29 @@ $(function() {
 			'</div>';
 		return content;
 	}	
-	
+
+	// Finds search results for search bar
+	// Parameters: prefix: search query, divid: HTML element to show results
+	function showSearchResult(prefix, divid) {
+		document.getElementById(divid).innerHTML = "";
+		searchPrefix = prefix;
+		
+		if (prefix === "") { // hide HTML element style if search bar is empty
+			document.getElementById(divid).style.padding="0em";
+		} else {
+			document.getElementById(divid).style.padding=".5em";
+
+			// Initialize Search Results
+			var searchResultFTs = new SearchFTCollection({
+				model: SearchFTModel
+			});
+			var ft_search = new SearchFTView({
+				collection: searchResultFTs
+			});
+			searchResultFTs.fetch();
+		}
+	}
+
 	// Returns the query string for GET request for getting closest food trucks
 	// Parameters: lon: longitude coordinate, lat: latitude coordinate
 	function getUrlCoordsParam(lon, lat) {

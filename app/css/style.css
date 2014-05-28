@@ -15,6 +15,23 @@ header {
 	text-indent: 1em;
 }
 
+#search {
+	margin-left: 1em;
+}
+
+#livesearch {
+	background: white;
+	margin-left: 8em;
+	position: absolute;
+	z-index: 2;
+}
+
+#livesearch p {
+	font: "Verdana", sans-serif;
+	line-height: 1em;
+	font-size: .75em;
+}
+
 #map_canvas {
 	width: 100%;
 }
