@@ -11,7 +11,7 @@ $(function() {
 
 	// HTML elements
 	var MAP_DIV_ID = 'map_canvas';
-	
+
 	var geocoder = new google.maps.Geocoder();
 
 	// Roughly the center of San Francisco
@@ -36,8 +36,40 @@ $(function() {
 		//map.setCenter(initialLocation);
 		});
 	}
-});
 
+	// Google Maps scrolling issue
+	var divfix = '<div class="marker" style="line-height:1.35;overflow:hidden;white-space:nowrap;">';
+
+	var centerPosition = new google.maps.Marker({
+		position : map.getCenter(),
+		map : map,
+		icon : {url: 'images/pin.png', scaledSize: new google.maps.Size(17, 45)}
+	});
+
+	// Initialize Marker Information Window
+	var markerWindow = new google.maps.InfoWindow({
+		content : "",
+		position : latlng
+	});
+
+	// Update nearest food trucks when center of map changes
+	google.maps.event.addListener(map, 'mouseup', function() {
+		var center = map.getCenter();
+		//infoWind.setContent(divfix+center.toUrlValue()+'</div>');
+		centerPosition.setPosition(center);
+		latlng = center;
+
+		// Initialize food trucks
+		var fts = new Foodtrucks({
+			model: Foodtruck
+		});
+
+		var ft_mapper = new Map({
+			collection: fts
+		});
+		fts.fetch();
+	});
+            
 	var Foodtruck = Backbone.Model;
 	var Foodtrucks = Backbone.Collection.extend({
 		model: Foodtruck,
@@ -48,8 +80,11 @@ $(function() {
 		initialize: function() {
 		}
 	});
-	
-		var Map = Backbone.View.extend({
+
+	var markerArray = []; // keep track of markers
+	var image = 'images/foodtruck.png'; // food truck icon
+    
+	var Map = Backbone.View.extend({
 		el: $('#'+MAP_DIV_ID),
 		initialize: function() {
 			
@@ -69,6 +104,7 @@ $(function() {
 						position: pos,
 						map: map,
 						title: ft.get(FT_NAME_ID),                  
+						icon: {url: image, scaledSize: new google.maps.Size(39,20)},
 						description: ft.get(FT_DESC_ID)
 					});
 					markerArray.push(mark);
@@ -95,6 +131,20 @@ $(function() {
 		collection: foodtrucks
 	});
 	foodtrucks.fetch();
+	
+// -- Helper functions --
+
+	// Get and format Marker Information Window
+	// Parameters: ftname: name of food truck, ftaddress: address of food truck,
+	// ftfood: food available at food truck
+	function markerContent(ftname, ftaddress, ftfood) {
+		var content = divfix+
+			'<h2 style="font-size:1.5em">'+ftname+'</h2>'+
+			'<p>'+ftaddress+'</p>'+
+			'<p><b>'+ftfood.replace(/:/g, '</p><p>')+'</b></p>'+
+			'</div>';
+		return content;
+	}	
 	
 	// Returns the query string for GET request for getting closest food trucks
 	// Parameters: lon: longitude coordinate, lat: latitude coordinate
